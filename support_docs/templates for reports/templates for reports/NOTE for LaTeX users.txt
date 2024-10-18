@@ -1,0 +1,3 @@
+- The latex template works well with BaKoMa Tex - TeXWord.
+- However, the template comes as is. There is no technical support.
+- As the template is based on IEEE directives, additional information can be find at the IEEE sites.
