@@ -1,6 +1,25 @@
 import cv2 as cv
 import numpy as np
+import os
 
+
+def get_calib_images(camera):
+
+    if camera == "left":
+        calib_dir = "project data/Calibratie 1/calibrationLeft"
+    elif camera == "right":
+        calib_dir = "project data/Calibratie 1/calibrationRight"
+    elif camera == "middle":
+        calib_dir = "project data/Calibratie 1/calibrationMiddle"
+    calib_img_paths = []
+    for f in os.listdir(calib_dir):
+        full_path = os.path.join(calib_dir, f)
+        if (os.path.isfile(full_path)):
+            calib_img_paths.append(full_path)
+
+    calib_images = [cv.imread(f, cv.IMREAD_GRAYSCALE) for f in calib_img_paths]
+
+    return calib_images
 
 def calibrate(imgs, board_shape, square_sz_mm):
     """Return camera calibration parameters
@@ -42,7 +61,6 @@ def calibrate(imgs, board_shape, square_sz_mm):
     extrinsics[:, :3, :3] /= square_sz_mm
 
     return intrinsic, extrinsics, dist, errors
-
 
 def transform_from_rot_trans(rvec, tvec):
     """Return 4x4 transformation matrix from rotation vector and translation vector """
