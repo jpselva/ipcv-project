@@ -29,6 +29,29 @@ class VideoProcessor:
         self.cap.release()
         self.out.release()
 
+def select_point(frame):
+    selected_point = None  # Initialize variable to store the selected point
+
+    # Mouse callback function to get the point
+    def get_click(event, x, y, flags, param):
+        nonlocal selected_point
+        if event == cv.EVENT_LBUTTONDOWN:  # If left mouse button is clicked
+            selected_point = (x, y)  # Store the clicked point
+            cv.destroyWindow("Select Point")  # Close the window
+
+    # Display the frame and set the mouse callback
+    cv.imshow("Select Point", frame)
+    cv.setMouseCallback("Select Point", get_click)
+
+    # Wait until the user selects a point
+    while selected_point is None:
+        if cv.waitKey(1) & 0xFF == ord('q'):  # Allow quitting with 'q'
+            cv.destroyAllWindows()
+            return None
+        cv.waitKey(1)  # Wait for a short moment
+
+    return selected_point  # Return the selected point
+
 def main(input_videos: list, output_videos: list) -> None:
 
     if len(input_videos) != len(output_videos): # Check if the number of input and output video files match
@@ -40,6 +63,8 @@ def main(input_videos: list, output_videos: list) -> None:
     # Calculate the delay based on the highest FPS for all videos
     max_fps = max(vp.fps for vp in video_processors)
     delay = int(1000 / max_fps)
+    
+    chose_point = False
 
     # While loop for processing
     while True:
@@ -47,15 +72,27 @@ def main(input_videos: list, output_videos: list) -> None:
         videos_done = True  
 
         # Read frames from all video processors and show them
-        for i, vp in enumerate(video_processors):
+        for video_index, vp in enumerate(video_processors):
             ret, frame = vp.read_frame()
 
             if ret:
-                # TODO: Process the frame here if needed (e.g., resizing, filtering, etc.)
-            
-                cv.imshow(f"Video {i}", frame)
-                vp.write_frame(frame)
+
                 videos_done = False     # at least one video is not done
+
+                # if it's the first video and there is no selected point, select a point
+                if video_index == 0 and chose_point == False:
+                    selected_point = select_point(frame)
+                    chose_point = True  
+                
+                # draw point on first video
+                if video_index==0 and selected_point is not None:
+                    cv.circle(frame, selected_point, 5, (0, 0, 255), -1)  # red circle
+
+                # TODO: Extra processing
+            
+                cv.imshow(f"Video {video_index}", frame)
+                vp.write_frame(frame)
+                
 
         if videos_done:
             break
