@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 from calibration import calibrate, get_calib_images
+from point_processing import select_point, track_point, draw_point
 
 class VideoProcessor:
     def __init__(self, input_video: str, output_video: str):
@@ -29,29 +30,6 @@ class VideoProcessor:
         self.cap.release()
         self.out.release()
 
-def select_point(frame):
-    selected_point = None  # Initialize variable to store the selected point
-
-    # Mouse callback function to get the point
-    def get_click(event, x, y, flags, param):
-        nonlocal selected_point
-        if event == cv.EVENT_LBUTTONDOWN:  # If left mouse button is clicked
-            selected_point = (x, y)  # Store the clicked point
-            cv.destroyWindow("Select Point")  # Close the window
-
-    # Display the frame and set the mouse callback
-    cv.imshow("Select Point", frame)
-    cv.setMouseCallback("Select Point", get_click)
-
-    # Wait until the user selects a point
-    while selected_point is None:
-        if cv.waitKey(1) & 0xFF == ord('q'):  # Allow quitting with 'q'
-            cv.destroyAllWindows()
-            return None
-        cv.waitKey(1)  # Wait for a short moment
-
-    return selected_point  # Return the selected point
-
 def main(input_videos: list, output_videos: list) -> None:
 
     if len(input_videos) != len(output_videos): # Check if the number of input and output video files match
@@ -79,17 +57,22 @@ def main(input_videos: list, output_videos: list) -> None:
 
                 videos_done = False     # at least one video is not done
 
+                #! Point selection
                 # if it's the first video and there is no selected point, select a point
                 if video_index == 0 and chose_point == False:
-                    selected_point = select_point(frame)
+                    point = select_point(frame)
+
+                    old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
                     chose_point = True  
                 
-                # draw point on first video
-                if video_index==0 and selected_point is not None:
-                    cv.circle(frame, selected_point, 5, (0, 0, 255), -1)  # red circle
+                #! Point tracking
+                if chose_point and point is not None and video_index == 0:
 
-                # TODO: Extra processing
-            
+                    point, gray_frame = track_point(frame, point, old_gray)
+                    old_gray = gray_frame
+
+                    frame = draw_point(frame, point, "red")
+
                 cv.imshow(f"Video {video_index}", frame)
                 vp.write_frame(frame)
                 
