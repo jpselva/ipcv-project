@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 
-def select_point(frame):
+def select_point(frame, point_name="Point"):
     selected_point = None  # Initialize variable to store the selected point
 
     # Mouse callback function to get the point
@@ -9,11 +9,11 @@ def select_point(frame):
         nonlocal selected_point
         if event == cv.EVENT_LBUTTONDOWN:  # If left mouse button is clicked
             selected_point = (x, y)  # Store the clicked point
-            cv.destroyWindow("Select Point")  # Close the window
+            cv.destroyWindow(f"Select {point_name}")    # Close the window
 
     # Display the frame and set the mouse callback
-    cv.imshow("Select Point", frame)
-    cv.setMouseCallback("Select Point", get_click)
+    cv.imshow(f"Select {point_name}", frame)
+    cv.setMouseCallback(f"Select {point_name}", get_click)
 
     # Wait until the user selects a point
     while selected_point is None:

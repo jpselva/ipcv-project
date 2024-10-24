@@ -17,7 +17,13 @@ class VideoProcessor:
         self.frame_height = int(self.cap.get(cv.CAP_PROP_FRAME_HEIGHT))
         fourcc = cv.VideoWriter_fourcc(*'mp4v')
 
+        self.frame_count = 0
+        self.video_done = False
+
         self.out = cv.VideoWriter(output_video, fourcc, self.fps, (self.frame_width, self.frame_height))
+
+    def increment_frame_count(self):
+        self.frame_count += 1
 
     def read_frame(self):
         ret, frame = self.cap.read()
@@ -41,13 +47,9 @@ def main(input_videos: list, output_videos: list) -> None:
     # Calculate the delay based on the highest FPS for all videos
     max_fps = max(vp.fps for vp in video_processors)
     delay = int(1000 / max_fps)
-    
-    chose_points = False
 
     # While loop for processing
     while True:
-
-        videos_done = True  
 
         # Read frames from all video processors and show them
         for video_index, vp in enumerate(video_processors):
@@ -55,35 +57,40 @@ def main(input_videos: list, output_videos: list) -> None:
 
             if ret:
 
-                videos_done = False     # at least one video is not done
+                vp.increment_frame_count()
 
                 #! Point selection
-                # if it's the first video and there is no selected point, select a point
-                if video_index == 0 and chose_points == False:
-                    interest_point = select_point(frame)
-                    reference_point = select_point(frame)
-
+                # first frame
+                if vp.frame_count == 1 and video_index == 0:
                     old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
-                    chose_points = True  
-                
+
+                    reference_point = select_point(frame, "Reference Point")   # select reference point
+                    interest_point = None
+
+                # frame for 2s
+                if vp.frame_count == 2*vp.fps and video_index == 0:
+                    interest_point = select_point(frame, "Interest Point")    # select interest point
+
                 #! Point tracking
-                if chose_points and video_index == 0:
+                if video_index == 0:    # only track in the first video for now
+
+                    if reference_point is not None:
+                        reference_point, gray_frame = track_point(frame, reference_point, old_gray)
+                        frame = draw_point(frame, reference_point, "green")
 
                     if interest_point is not None:
                         interest_point, gray_frame = track_point(frame, interest_point, old_gray)
+                        frame = draw_point(frame, interest_point, "red")
                     
-                    if reference_point is not None:
-                        reference_point, gray_frame = track_point(frame, reference_point, old_gray)
                     old_gray = gray_frame
-
-                    frame = draw_point(frame, interest_point, "red")
-                    frame = draw_point(frame, reference_point, "green")
 
                 cv.imshow(f"Video {video_index}", frame)
                 vp.write_frame(frame)
-                
+            
+            else:
+                vp.video_done = True
 
-        if videos_done:
+        if all(vp.video_done for vp in video_processors):   # if all videos are done
             break
 
         # Press Q on keyboard to exit
