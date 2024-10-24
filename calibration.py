@@ -91,6 +91,12 @@ def stereo_calibrate(imgs1, imgs2, board_shape, square_sz_mm):
          represented in camera 2's CS as R*P + T
     E -- essential matrix
     F -- fundamental matrix
+    K1 -- camera 1 intrinsic matrix
+    E1 -- camera 1 extrinsic matrix
+    dist1 -- camera 1 distortion parameters
+    K2 -- camera 2 intrinsic matrix
+    E2 -- camera 2 extrinsic matrix
+    dist2 -- camera 2 distortion parameters
     """
     # get coordinates of board points measured in board's coordinate system
     # that is, [(0, 0, 0), (0, 1, 0), ..., (h, w, 0)]
@@ -99,8 +105,8 @@ def stereo_calibrate(imgs1, imgs2, board_shape, square_sz_mm):
 
     img_size = imgs1[0].shape
 
-    K1, T1, dist1, _ = calibrate(imgs1, board_shape, square_sz_mm)
-    K2, T2, dist2, _ = calibrate(imgs2, board_shape, square_sz_mm)
+    K1, E1, dist1, _ = calibrate(imgs1, board_shape, square_sz_mm)
+    K2, E2, dist2, _ = calibrate(imgs2, board_shape, square_sz_mm)
 
     points1 = []
     points2 = []
@@ -132,4 +138,4 @@ def stereo_calibrate(imgs1, imgs2, board_shape, square_sz_mm):
                                                      criteria=criteria,
                                                      flags=cv.CALIB_FIX_INTRINSIC)
 
-    return ret, R, T, E, F
+    return ret, R, T, E, F, K1, E1, dist1, K2, E2, dist2
