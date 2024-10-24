@@ -21,6 +21,7 @@ def get_calib_images(camera):
 
     return calib_images
 
+
 def calibrate(imgs, board_shape, square_sz_mm):
     """Return camera calibration parameters
 
@@ -62,9 +63,73 @@ def calibrate(imgs, board_shape, square_sz_mm):
 
     return intrinsic, extrinsics, dist, errors
 
+
 def transform_from_rot_trans(rvec, tvec):
     """Return 4x4 transformation matrix from rotation vector and translation vector """
     rmat = cv.Rodrigues(rvec, None)[0]
     transf = np.concatenate([rmat, tvec], axis=1)
     transf = np.concatenate([transf, np.array([[0, 0, 0, 1]])])
     return transf
+
+
+def stereo_calibrate(imgs1, imgs2, board_shape, square_sz_mm):
+    """Perform stereo calibration between two cameras
+
+    Arguments:
+    imgs1 -- calibration images of first camera
+    imgs2 -- calibration images of second camera. Images should be matched
+             with another image taken from the same scene in imgs1 for each index
+    board_shape -- tuple (internal corners per column, internal corners per row)
+    square_sz_mm -- side length of a chessboard square in mm
+
+    Returns:
+    ret -- true if calibration succeded, false otherwise
+    R -- rotation matrix from camera 1's coordinate system to camera 2's
+         coordinate system
+    T -- translation matrix from camera 1's coordinate system to camera 2's
+         coordinate system. For a point P given in camera 1's CS, it can be
+         represented in camera 2's CS as R*P + T
+    E -- essential matrix
+    F -- fundamental matrix
+    """
+    # get coordinates of board points measured in board's coordinate system
+    # that is, [(0, 0, 0), (0, 1, 0), ..., (h, w, 0)]
+    grid_pts = np.zeros((board_shape[0] * board_shape[1], 3), np.float32)
+    grid_pts[:, :2] = np.mgrid[0:board_shape[0], 0:board_shape[1]].T.reshape(-1, 2)
+
+    img_size = imgs1[0].shape
+
+    K1, T1, dist1, _ = calibrate(imgs1, board_shape, square_sz_mm)
+    K2, T2, dist2, _ = calibrate(imgs2, board_shape, square_sz_mm)
+
+    points1 = []
+    points2 = []
+    board_pts = []
+
+    for img1, img2 in zip(imgs1, imgs2):
+        ret1, corners1 = cv.findChessboardCorners(img1, board_shape, None)
+        ret2, corners2 = cv.findChessboardCorners(img2, board_shape, None)
+
+        # chessboard must be found in BOTH images
+        if not ret1 or not ret2:
+            continue
+
+        # improve precision of corner location
+        corners1 = cv.cornerSubPix(img1, corners1, (11, 11), (-1, -1),
+                                   (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER,
+                                    30, 0.001))
+        corners2 = cv.cornerSubPix(img2, corners2, (11, 11), (-1, -1),
+                                   (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER,
+                                   30, 0.001))
+
+        points1.append(corners1)
+        points2.append(corners2)
+        board_pts.append(grid_pts)
+
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
+    ret, _, _, _, _, R, T, E, F = cv.stereoCalibrate(board_pts, points1, points2,
+                                                     K1, dist1, K2, dist2, img_size,
+                                                     criteria=criteria,
+                                                     flags=cv.CALIB_FIX_INTRINSIC)
+
+    return ret, R, T, E, F
