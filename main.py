@@ -42,7 +42,7 @@ def main(input_videos: list, output_videos: list) -> None:
     max_fps = max(vp.fps for vp in video_processors)
     delay = int(1000 / max_fps)
     
-    chose_point = False
+    chose_points = False
 
     # While loop for processing
     while True:
@@ -59,19 +59,25 @@ def main(input_videos: list, output_videos: list) -> None:
 
                 #! Point selection
                 # if it's the first video and there is no selected point, select a point
-                if video_index == 0 and chose_point == False:
-                    point = select_point(frame)
+                if video_index == 0 and chose_points == False:
+                    interest_point = select_point(frame)
+                    reference_point = select_point(frame)
 
                     old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
-                    chose_point = True  
+                    chose_points = True  
                 
                 #! Point tracking
-                if chose_point and point is not None and video_index == 0:
+                if chose_points and video_index == 0:
 
-                    point, gray_frame = track_point(frame, point, old_gray)
+                    if interest_point is not None:
+                        interest_point, gray_frame = track_point(frame, interest_point, old_gray)
+                    
+                    if reference_point is not None:
+                        reference_point, gray_frame = track_point(frame, reference_point, old_gray)
                     old_gray = gray_frame
 
-                    frame = draw_point(frame, point, "red")
+                    frame = draw_point(frame, interest_point, "red")
+                    frame = draw_point(frame, reference_point, "green")
 
                 cv.imshow(f"Video {video_index}", frame)
                 vp.write_frame(frame)
