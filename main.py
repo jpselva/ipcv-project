@@ -20,6 +20,10 @@ class VideoProcessor:
         self.frame_count = 0
         self.video_done = False
 
+        self.reference_point = None
+        self.interest_point = None
+        self.old_gray = None
+
         self.out = cv.VideoWriter(output_video, fourcc, self.fps, (self.frame_width, self.frame_height))
 
     def increment_frame_count(self):
@@ -61,28 +65,27 @@ def main(input_videos: list, output_videos: list) -> None:
 
                 #! Point selection
                 # first frame
-                if vp.frame_count == 1 and video_index == 0:
-                    old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
+                if vp.frame_count == 1:
+                    vp.old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
 
-                    reference_point = select_point(frame, "Reference Point")   # select reference point
-                    interest_point = None
+                    vp.reference_point = select_point(frame, "Reference Point")   # select reference point
 
                 # frame for 2s
-                if vp.frame_count == 2*vp.fps and video_index == 0:
-                    interest_point = select_point(frame, "Interest Point")    # select interest point
+                if vp.frame_count == 2*vp.fps:
+                    vp.interest_point = select_point(frame, "Interest Point")    # select interest point
 
                 #! Point tracking
-                if video_index == 0:    # only track in the first video for now
+                
 
-                    if reference_point is not None:
-                        reference_point, gray_frame = track_point(frame, reference_point, old_gray)
-                        frame = draw_point(frame, reference_point, "green")
+                if vp.reference_point is not None:
+                    vp.reference_point, gray_frame = track_point(frame, vp.reference_point, vp.old_gray)
+                    frame = draw_point(frame, vp.reference_point, "green")
 
-                    if interest_point is not None:
-                        interest_point, gray_frame = track_point(frame, interest_point, old_gray)
-                        frame = draw_point(frame, interest_point, "red")
+                    if vp.interest_point is not None:
+                        vp.interest_point, gray_frame = track_point(frame, vp.interest_point, vp.old_gray)
+                        frame = draw_point(frame, vp.interest_point, "red")
                     
-                    old_gray = gray_frame
+                    vp.old_gray = gray_frame
 
                 cv.imshow(f"Video {video_index}", frame)
                 vp.write_frame(frame)
