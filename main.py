@@ -3,6 +3,8 @@ import numpy as np
 from calibration import calibrate, get_calib_images
 from point_processing import select_point, track_point, draw_point
 
+N_REFERENCE_POINTS = 3
+
 class VideoProcessor:
     def __init__(self, input_video: str, output_video: str):
         self.input_video = input_video
@@ -20,7 +22,7 @@ class VideoProcessor:
         self.frame_count = 0
         self.video_done = False
 
-        self.reference_point = None
+        self.reference_points = []
         self.interest_point = None
         self.old_gray = None
 
@@ -68,24 +70,24 @@ def main(input_videos: list, output_videos: list) -> None:
                 if vp.frame_count == 1:
                     vp.old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
 
-                    vp.reference_point = select_point(frame, "Reference Point")   # select reference point
+                    for i in range(N_REFERENCE_POINTS):
+                        vp.reference_points.append(select_point(frame, f"Reference Point {i+1}"))    # select reference points
 
                 # frame for 2s
                 if vp.frame_count == 2*vp.fps:
                     vp.interest_point = select_point(frame, "Interest Point")    # select interest point
 
                 #! Point tracking
-                
+                if vp.reference_points is not None:
+                    for point in vp.reference_points:
+                        point, gray_frame = track_point(frame, point, vp.old_gray)
+                        frame = draw_point(frame, point, "green")
 
-                if vp.reference_point is not None:
-                    vp.reference_point, gray_frame = track_point(frame, vp.reference_point, vp.old_gray)
-                    frame = draw_point(frame, vp.reference_point, "green")
-
-                    if vp.interest_point is not None:
-                        vp.interest_point, gray_frame = track_point(frame, vp.interest_point, vp.old_gray)
-                        frame = draw_point(frame, vp.interest_point, "red")
+                if vp.interest_point is not None:
+                    vp.interest_point, gray_frame = track_point(frame, vp.interest_point, vp.old_gray)
+                    frame = draw_point(frame, vp.interest_point, "red")
                     
-                    vp.old_gray = gray_frame
+                vp.old_gray = gray_frame
 
                 cv.imshow(f"Video {video_index}", frame)
                 vp.write_frame(frame)

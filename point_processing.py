@@ -34,9 +34,6 @@ def track_point(frame, point_to_track, old_gray):
 
     gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-    print(f"Old gray shape: {old_gray.shape} and gray frame shape: {gray_frame.shape}")
-    print(f"Point to track: {point_to_track}")
-
     # Calculate optical flow to track the point
     new_point, st, err = cv.calcOpticalFlowPyrLK(old_gray, gray_frame, point_to_track, None, **lk_params)
 
@@ -52,6 +49,8 @@ def draw_point(frame, point, color):
         rgb = (0, 0, 255)
     elif color == "green":
         rgb = (0, 255, 0)
+    else:    # default color is blue
+        rgb = (255, 0, 0)
 
     # convert to tuple of x, y
     point = tuple(point[0][0].astype(int))
