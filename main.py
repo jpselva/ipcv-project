@@ -1,9 +1,11 @@
 import cv2 as cv
 import numpy as np
 from calibration import calibrate, get_calib_images
-from point_processing import select_point, track_point, draw_point
+from point_processing import select_point, track_point
+from ref import create3dRef
+from draw import draw_point, drawVector
 
-NUM_REFERENCE_POINTS = 2
+NUM_REFERENCE_POINTS = 2 #origin and x (for vector x direction) for now
 
 class VideoProcessor:
     def __init__(self, input_video: str, output_video: str):
@@ -22,9 +24,9 @@ class VideoProcessor:
         self.frame_count = 0
         self.video_done = False
 
-        self.reference_points = []
-        self.origin = None
-        self.x = None
+        self.ref_points = [] #origin and x
+        self.ref_point_states = {} #states of reference points
+
         self.interest_point = None
         self.old_gray = None
 
@@ -74,23 +76,33 @@ def main(input_videos: list, output_videos: list) -> None:
                 if vp.frame_count == 1:
                     vp.old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
 
-                    vp.reference_points.append(select_point(frame, "origin of referential"))    # select reference points
-                    vp.reference_points.append(select_point(frame, "x-axis point"))
-                    
+                    #TODO: maybe put this repeated code in a function to avoid repetition
+                    origin = select_point(frame, "Origin of referential")
+                    x = select_point(frame, "x point for referential")
+                    vp.ref_points.append(origin)
+                    vp.ref_points.append(x)
+                    vp.ref_point_states["origin"] = False #not tracked yet
+                    vp.ref_point_states["x"] = False
+
                 # frame for 2s
                 if vp.frame_count == 2*vp.fps:
                     vp.interest_point = select_point(frame, "Interest Point")    # select interest point
 
                 #! Point tracking
-                if len(vp.reference_points) == NUM_REFERENCE_POINTS:
-                    for point in vp.reference_points:
+                if len(vp.ref_points) == NUM_REFERENCE_POINTS: #if all reference points are selected
+                    for point in vp.ref_points:
                         point, gray_frame = track_point(frame, point, vp.old_gray)
                         frame = draw_point(frame, point, "green")
 
                 if vp.interest_point is not None:
                     vp.interest_point, gray_frame = track_point(frame, vp.interest_point, vp.old_gray)
                     frame = draw_point(frame, vp.interest_point, "red")
-                    
+
+                #TODO: if all the reference points are being tracked for all videos [tracking states not implemented yet]
+                #if all(vp.reference_points_states.values() for vp in video_processors):
+                #! Create 3d referential
+                #call create3dRef with the reference points from all videos    
+                
                 vp.old_gray = gray_frame
 
                 cv.imshow(f"Video {video_index}", frame)

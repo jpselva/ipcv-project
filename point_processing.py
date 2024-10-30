@@ -48,19 +48,3 @@ def track_point(frame, point_to_track, old_gray):
 
     return new_point, gray_frame
 
-def draw_point(frame, point, color):
-
-    if color == "red":
-        rgb = (0, 0, 255)
-    elif color == "green":
-        rgb = (0, 255, 0)
-    else:    # default color is blue
-        rgb = (255, 0, 0)
-
-    # convert to tuple of x, y
-    point = tuple(point[0][0].astype(int))
-
-    # Draw a circle around the point
-    cv.circle(frame, point, 5, rgb, -1)
-
-    return frame
