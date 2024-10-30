@@ -62,7 +62,9 @@ def main(input_videos: list, output_videos: list) -> None:
             ret, frame = vp.read_frame()
 
             if ret:
-
+                # resize frame for better performance (remove for final video)
+                frame = cv.resize(frame, (frame.shape[1]//2, frame.shape[0]//2))
+                
                 vp.increment_frame_count()
 
                 #! Point selection

@@ -2,29 +2,34 @@ import cv2 as cv
 import numpy as np
 
 def select_point(frame, point_name="Point"):
-    selected_point = None  # Initialize variable to store the selected point
-
+    selected_point = None  #variable to store the selected point
+    
     # Mouse callback function to get the point
     def get_click(event, x, y, flags, param):
         nonlocal selected_point
-        if event == cv.EVENT_LBUTTONDOWN:  # If left mouse button is clicked
-            selected_point = (x, y)  # Store the clicked point
-            cv.destroyWindow(f"Select {point_name}")    # Close the window
-
-    # Display the frame and set the mouse callback
+        if event == cv.EVENT_LBUTTONDOWN:  #if left mouse button is clicked
+            selected_point = (x, y)
+            print("Selected point:", selected_point)
+            
+    #display the frame and set the mouse callback
     cv.imshow(f"Select {point_name}", frame)
-    cv.setMouseCallback(f"Select {point_name}", get_click)
-
+    try:
+        cv.setMouseCallback(f"Select {point_name}", get_click)
+    except Exception as e:
+        print(f"Error setting mouse callback: {e}")
+        
     # Wait until the user selects a point
     while selected_point is None:
-        if cv.waitKey(1) & 0xFF == ord('q'):  # Allow quitting with 'q'
+        if cv.waitKey(1) & 0xFF == ord('q'):  #allow quitting with 'q'
             cv.destroyAllWindows()
             return None
-        cv.waitKey(1)  # Wait for a short moment
-
+        cv.waitKey(10)
+    
+    
     # convert for calcOpticalFlowPyrLK
     selected_point = np.array(selected_point).reshape(-1, 1, 2).astype(np.float32)
-
+    
+    cv.destroyWindow(f"Select {point_name}")
     return selected_point  # Return the selected point
 
 def track_point(frame, point_to_track, old_gray):
