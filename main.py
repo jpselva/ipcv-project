@@ -3,7 +3,7 @@ import numpy as np
 from calibration import calibrate, get_calib_images
 from point_processing import select_point, track_point, draw_point
 
-N_REFERENCE_POINTS = 3
+NUM_REFERENCE_POINTS = 2
 
 class VideoProcessor:
     def __init__(self, input_video: str, output_video: str):
@@ -23,6 +23,8 @@ class VideoProcessor:
         self.video_done = False
 
         self.reference_points = []
+        self.origin = None
+        self.x = None
         self.interest_point = None
         self.old_gray = None
 
@@ -72,15 +74,15 @@ def main(input_videos: list, output_videos: list) -> None:
                 if vp.frame_count == 1:
                     vp.old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
 
-                    for i in range(N_REFERENCE_POINTS):
-                        vp.reference_points.append(select_point(frame, f"Reference Point {i+1}"))    # select reference points
-
+                    vp.reference_points.append(select_point(frame, "origin of referential"))    # select reference points
+                    vp.reference_points.append(select_point(frame, "x-axis point"))
+                    
                 # frame for 2s
                 if vp.frame_count == 2*vp.fps:
                     vp.interest_point = select_point(frame, "Interest Point")    # select interest point
 
                 #! Point tracking
-                if vp.reference_points is not None:
+                if len(vp.reference_points) == NUM_REFERENCE_POINTS:
                     for point in vp.reference_points:
                         point, gray_frame = track_point(frame, point, vp.old_gray)
                         frame = draw_point(frame, point, "green")
