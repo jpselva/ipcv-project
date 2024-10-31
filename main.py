@@ -1,6 +1,6 @@
 import cv2 as cv
 import numpy as np
-from calibration import calibrate, get_calib_images
+from calibration import calibrate, get_calib_images, stereo_calibrate
 from point_processing import select_point, track_point
 from ref import create3dRef
 from draw import draw_point, drawVector
@@ -91,6 +91,7 @@ def main(input_videos: list, output_videos: list) -> None:
                 #! Point tracking
                 if len(vp.ref_points) == NUM_REFERENCE_POINTS: #if all reference points are selected
                     for point in vp.ref_points:
+                        point = np.array(point).reshape(-1, 1, 2).astype(np.float32) #correct shape for tracking                        
                         point, gray_frame = track_point(frame, point, vp.old_gray)
                         frame = draw_point(frame, point, "green")
 
@@ -100,8 +101,9 @@ def main(input_videos: list, output_videos: list) -> None:
 
                 #TODO: if all the reference points are being tracked for all videos [tracking states not implemented yet]
                 #if all(vp.reference_points_states.values() for vp in video_processors):
-                #! Create 3d referential
-                #call create3dRef with the reference points from all videos    
+                #! IN PROGRESS: Create 3d referential (for now just tracking x and origin) 
+                if(all(len(vp.ref_points) == NUM_REFERENCE_POINTS for vp in video_processors)):
+                        create3dRef(frame, video_processors[0].ref_points, video_processors[1].ref_points, R2_1, T2_1)
                 
                 vp.old_gray = gray_frame
 
@@ -126,15 +128,26 @@ def main(input_videos: list, output_videos: list) -> None:
 
 if __name__ == "__main__":
 
-    # calibrate left camera
-    calib_images = get_calib_images("right")
-    intrinsic, extrinsics, dist, errors = calibrate(calib_images, (6, 9), 10)
-    print(f"K = {intrinsic}")
-    print(f"dist = {dist[0]}")
-    print(f"extrinsic matrix for 1st image = {extrinsics[0]}")
+    # Get calibration images for both left and right cameras
+    calib_images_left = get_calib_images("left")
+    calib_images_right = get_calib_images("right")
+
+    board_shape = (6, 9)
+    square_sz_mm = 10 
+
+    ret, R2_1, T2_1, E, F, K1, E1, dist1, K2, E2, dist2 = stereo_calibrate(calib_images_left, calib_images_right, board_shape, square_sz_mm)
+    
+    if ret:
+        print("Stereo calibration successful.")
+        print(f"K1 = {K1}")  # Intrinsic matrix for camera 1
+        print(f"K2 = {K2}")  # Intrinsic matrix for camera 2
+        print(f"R (from 1 to 2)= {R2_1}")    # Rotation matrix from camera 1 to camera 2
+        print(f"T (from 1 to 2)= {T2_1}")    # Translation vector from camera 1 to camera 2
+    else:
+        print("Stereo calibration failed.")
 
     input_videos = ["project data/subject1/proefpersoon 1.2_M.avi", "project data/subject1/proefpersoon 1.2_R.avi"]
     output_videos = ["output_videos/output_M.mp4", "output_videos/output_R.mp4"]
 
-    # process videos
+    # Process videos
     main(input_videos, output_videos)

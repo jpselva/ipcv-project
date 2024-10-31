@@ -12,6 +12,10 @@ def triangulate_points(pts1, pts2, R, T):
     R -- rotation matrix to transform from 2nd camera CS to 1st camera CS (see stereo_calibrate)
     T -- translation to transform from 2nd camera CS to 1st camera CS (see stereo_calibrate)
     """
+    pts1 = np.array(pts1, dtype=np.float32).T 
+    pts2 = np.array(pts2, dtype=np.float32).T
+    #print(pts1) -> 2xN
+
     P1 = np.hstack([np.eye(3), np.zeros((3, 1))])
     R_inv = np.linalg.inv(R)
     T_inv = -np.matmul(R_inv, T)

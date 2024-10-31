@@ -24,11 +24,7 @@ def select_point(frame, point_name="Point"):
             cv.destroyAllWindows()
             return None
         cv.waitKey(10)
-    
-    
-    # convert for calcOpticalFlowPyrLK
-    selected_point = np.array(selected_point).reshape(-1, 1, 2).astype(np.float32)
-    
+        
     cv.destroyWindow(f"Select {point_name}")
     return selected_point  # Return the selected point
 
@@ -41,6 +37,8 @@ def track_point(frame, point_to_track, old_gray):
 
     # Calculate optical flow to track the point
     new_point, st, err = cv.calcOpticalFlowPyrLK(old_gray, gray_frame, point_to_track, None, **lk_params)
+
+    new_point = tuple(map(int, new_point.flatten())) #convert to tuple of x,y coordinates
 
     if st[0][0] == 0:
         print("Point not found")

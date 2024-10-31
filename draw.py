@@ -1,6 +1,6 @@
 import cv2 as cv
 
-def draw_point(frame, point, color):
+def draw_point(frame, point: tuple[int, int], color: str):
 
     if color == "red":
         rgb = (0, 0, 255)
@@ -8,9 +8,6 @@ def draw_point(frame, point, color):
         rgb = (0, 255, 0)
     else:    # default color is blue
         rgb = (255, 0, 0)
-
-    # convert to tuple of x, y
-    point = tuple(point[0][0].astype(int))
 
     # Draw a circle around the point
     cv.circle(frame, point, 5, rgb, -1)
