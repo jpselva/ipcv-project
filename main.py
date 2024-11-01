@@ -39,18 +39,18 @@ if __name__ == "__main__":
     # these are hardcoded points I found that matched the desired features.
     # use select_n_points below to allow the user to select the points
     # they must be selected in the right order: nose, cheek_l, forehead, cheek_r
-    points_m = np.array([[528, 430],
-                         [646, 399],
-                         [512, 314],
-                         [383, 407]], np.float32)
+    #points_m = np.array([[528, 430],
+    #                     [646, 399],
+    #                     [512, 314],
+    #                     [383, 407]], np.float32)
 
-    points_r = np.array([[742, 443],
-                         [895, 409],
-                         [743, 320],
-                         [618, 419]], np.float32)
+    #points_r = np.array([[742, 443],
+    #                     [895, 409],
+    #                     [743, 320],
+    #                     [618, 419]], np.float32)
 
-    # points_m = select_n_points(frame_m, 5)
-    # points_r = select_n_points(frame_r, 5)
+    points_m = np.array(select_n_points(frame_m, 4), np.float32)
+    points_r = np.array(select_n_points(frame_r, 4), np.float32)
 
     points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
 
