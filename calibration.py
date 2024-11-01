@@ -102,7 +102,9 @@ def stereo_calibrate(imgs1, imgs2, board_shape, square_sz_mm):
     # that is, [(0, 0, 0), (0, 1, 0), ..., (h, w, 0)]
     grid_pts = np.zeros((board_shape[0] * board_shape[1], 3), np.float32)
     grid_pts[:, :2] = np.mgrid[0:board_shape[0], 0:board_shape[1]].T.reshape(-1, 2)
-
+    #? multiply by square size here???
+    #?grid_pts *= square_sz_mm
+    
     img_size = imgs1[0].shape
 
     K1, E1, dist1, _ = calibrate(imgs1, board_shape, square_sz_mm)

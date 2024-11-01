@@ -16,10 +16,12 @@ def triangulate_points(pts1, pts2, R, T):
     pts2 = np.array(pts2, dtype=np.float32).T
     #print(pts1) -> 2xN
 
-    P1 = np.hstack([np.eye(3), np.zeros((3, 1))])
-    R_inv = np.linalg.inv(R)
-    T_inv = -np.matmul(R_inv, T)
-    P2 = np.hstack([R_inv, -T_inv])
+    P1 = np.hstack([np.eye(3), np.zeros((3, 1))]) #origin camera
+    #I think this is incorrect since R and T are from 1 to 2 already
+    #R_inv = np.linalg.inv(R)
+    #T_inv = -np.matmul(R_inv, T)
+    #P2 = np.hstack([R_inv, -T_inv])
+    P2 = np.hstack([R, T])
 
     points = cv.triangulatePoints(P1, P2, pts1, pts2).T
     points = np.array([p / p[3] for p in points])

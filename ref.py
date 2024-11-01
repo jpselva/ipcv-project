@@ -1,20 +1,20 @@
 from triangulation import triangulate_points
+import numpy as np
+import matplotlib.pyplot as plt
+from draw import draw3dRef
 
-def create3dRef(frame, reference_points_c1, reference_points_c2, R, T):
-    #TODO: implement this function
-    #Idea for now:
-    # 1. get origin and x points from both cameras
-    # 2. triangulate the points to get the 3D points
-    # 3. calclate x vector in 3d space
-    # 4. calculate y vector like (xy, -xx, xz) to get a perpendicular vector to x
-    # 5. calculate z vector by cross product of x and y
-    # 6. make a 3d plot of the vectors and interest point (in another function probably)
+def create3dRef(frame, reference_points_c1, reference_points_c2, R, T) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    points3d_homog = triangulate_points(reference_points_c1, reference_points_c2, R, T)
+    origin3d = points3d_homog[0][0:3]
+    x3d = points3d_homog[1][0:3]
     
-    #print(reference_points_c1, reference_points_c2) -> [(x1, y1), (x2, y2), ...] [(x1, y1), (x2, y2), ...]
+    x_vector = (x3d - origin3d)
+    x_vector = x_vector / np.linalg.norm(x_vector)
+    
+    y_vector = np.array([x_vector[1], -x_vector[0], x_vector[2]], dtype=np.float32)
+    y_vector = y_vector / np.linalg.norm(y_vector)
+    
+    z_vector = np.cross(x_vector, y_vector)
+    z_vector = z_vector / np.linalg.norm(z_vector)
 
-    points3d = triangulate_points(reference_points_c1, reference_points_c2, R, T)
-    origin3d = points3d[0]
-    x3d = points3d[1]
-    print("Origin:", origin3d)
-    print("X:", x3d)
-    return
+    return origin3d, x_vector, y_vector, z_vector

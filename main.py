@@ -3,7 +3,8 @@ import numpy as np
 from calibration import calibrate, get_calib_images, stereo_calibrate
 from point_processing import select_point, track_point
 from ref import create3dRef
-from draw import draw_point, drawVector
+from draw import draw_point, draw3dRef
+import matplotlib.pyplot as plt
 
 NUM_REFERENCE_POINTS = 2 #origin and x (for vector x direction) for now
 
@@ -57,6 +58,10 @@ def main(input_videos: list, output_videos: list) -> None:
     # Calculate the delay based on the highest FPS for all videos
     max_fps = max(vp.fps for vp in video_processors)
     delay = int(1000 / max_fps)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    plt.ion()
 
     # While loop for processing
     while True:
@@ -103,8 +108,13 @@ def main(input_videos: list, output_videos: list) -> None:
                 #if all(vp.reference_points_states.values() for vp in video_processors):
                 #! IN PROGRESS: Create 3d referential (for now just tracking x and origin) 
                 if(all(len(vp.ref_points) == NUM_REFERENCE_POINTS for vp in video_processors)):
-                        create3dRef(frame, video_processors[0].ref_points, video_processors[1].ref_points, R2_1, T2_1)
-                
+                    origin3d, x_vector, y_vector, z_vector = create3dRef(frame, video_processors[0].ref_points,
+                                                            video_processors[1].ref_points, R2_1, T2_1)
+                    draw3dRef(ax, origin3d, x_vector, y_vector, z_vector)
+                    plt.draw()
+                    plt.pause(0.01)
+
+
                 vp.old_gray = gray_frame
 
                 cv.imshow(f"Video {video_index}", frame)
@@ -118,6 +128,8 @@ def main(input_videos: list, output_videos: list) -> None:
 
         # Press Q on keyboard to exit
         if cv.waitKey(delay) & 0xFF == ord('q'):
+            cv.destroyAllWindows()
+            plt.close(fig)
             break
 
     # Release all video processors
@@ -125,6 +137,7 @@ def main(input_videos: list, output_videos: list) -> None:
         vp.release()
 
     cv.destroyAllWindows()
+    plt.close(fig)
 
 if __name__ == "__main__":
 
