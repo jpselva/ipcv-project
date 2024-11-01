@@ -28,6 +28,7 @@ def select_point(frame, point_name="Point"):
     cv.destroyWindow(f"Select {point_name}")
     return selected_point  # Return the selected point
 
+
 def track_point(frame, point_to_track, old_gray):
 
     # lucas kanade parameters
@@ -46,3 +47,12 @@ def track_point(frame, point_to_track, old_gray):
 
     return new_point, gray_frame
 
+
+def track_points(frame, prev_frame, points):
+    lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03))
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    prev_gray = cv.cvtColor(prev_frame, cv.COLOR_BGR2GRAY)
+
+    new_points, st, err = cv.calcOpticalFlowPyrLK(prev_gray, gray, points, None, **lk_params)
+
+    return new_points
