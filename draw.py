@@ -17,8 +17,8 @@ def draw_point(frame, point: tuple[int, int], color: str):
 
     return frame
 
-
-def drawVector(frame, origin, dest, color):
+#not being used
+""" def drawVector(frame, origin, dest, color):
     if color == "red":
         rgb = (0, 0, 255)
     elif color == "green":
@@ -34,9 +34,9 @@ def drawVector(frame, origin, dest, color):
     cv.arrowedLine(frame, origin, dest, rgb, 2)
 
     return frame
+ """
 
-
-def draw3dRef(ax: plt.Axes, origin, x, y, z):
+""" def draw3dRef(ax: plt.Axes, origin, x, y, z):
     # Unpack the origin and vectors for readability
     x0, y0, z0 = origin
     x1, y1, z1 = x
@@ -59,7 +59,7 @@ def draw3dRef(ax: plt.Axes, origin, x, y, z):
     ax.set_xlabel('X-axis')
     ax.set_ylabel('Y-axis')
     ax.set_zlabel('Z-axis')
-    ax.legend()
+    ax.legend() """
 
 
 def plot_3d_points(points, labels, ax):
@@ -85,7 +85,7 @@ def plot_3d_points(points, labels, ax):
     ax.set_xlim(mid_x - max_range, mid_x + max_range)
     ax.set_ylim(mid_y - max_range, mid_y + max_range)
     ax.set_zlim(mid_z - max_range, mid_z + max_range)
-
+    ax.invert_xaxis()
 
 def plot_coordinate_system(x, y, z, origin, ax, scale):
     # Plot each vector with the specified colors

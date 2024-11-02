@@ -1,9 +1,9 @@
 import cv2 as cv
 import numpy as np
 from calibration import get_calib_images, stereo_calibrate
-from point_processing import select_point, track_point, track_points
-from ref import create3dRef
-from draw import draw_point, draw3dRef, plot_3d_points, plot_coordinate_system
+from point_processing import select_point, track_points
+from ref import create3dRef, convertToRef
+from draw import plot_3d_points, plot_coordinate_system
 from triangulation import triangulate_points
 import matplotlib.pyplot as plt
 
@@ -11,9 +11,16 @@ import matplotlib.pyplot as plt
 def select_n_points(frame, n):
     points = []
     for i in range(n):
-        points.append(select_point(frame, f"Select {i}th point"))
+        if i == 0:
+            points.append(select_point(frame, "nose"))
+        elif i == 1:
+            points.append(select_point(frame, "right cheek (from camera's perspective)"))
+        elif i == 2:
+            points.append(select_point(frame, "forehead (for reference)"))
+        elif i == 3:
+            points.append(select_point(frame, "left Cheek (from camera's perspective)"))
+        
     return points
-
 
 if __name__ == "__main__":
 
@@ -34,22 +41,24 @@ if __name__ == "__main__":
     fps = int(round(cap_m.get(cv.CAP_PROP_FPS)))
 
     ret_m, frame_m = cap_m.read()
+    fps_m = int(round(cap_m.get(cv.CAP_PROP_FPS)))
+    frame_count_m = 0      
     ret_r, frame_r = cap_r.read()
 
     # these are hardcoded points I found that matched the desired features.
     # use select_n_points below to allow the user to select the points
     # they must be selected in the right order: nose, cheek_l, forehead, cheek_r
-    #points_m = np.array([[528, 430],
-    #                     [646, 399],
-    #                     [512, 314],
-    #                     [383, 407]], np.float32)
+    """ points_m = np.array([[528, 430],
+                          [646, 399],
+                          [512, 314],
+                          [383, 407]], np.float32)
 
-    #points_r = np.array([[742, 443],
-    #                     [895, 409],
-    #                     [743, 320],
-    #                     [618, 419]], np.float32)
+    points_r = np.array([[742, 443],
+                          [895, 409],
+                          [743, 320],
+                          [618, 419]], np.float32) """
 
-    points_m = np.array(select_n_points(frame_m, 4), np.float32)
+    points_m = np.array(select_n_points(frame_m, 4), np.float32) 
     points_r = np.array(select_n_points(frame_r, 4), np.float32)
 
     points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
@@ -62,26 +71,38 @@ if __name__ == "__main__":
 
     while True:
         ret_m, next_frame_m = cap_m.read()
+        frame_count_m += 1
         ret_r, next_frame_r = cap_r.read()
 
         if not ret_m or not ret_r:
             print("couldn't read frame")
             break
+        
+        if(frame_count_m == 2*fps_m): #tongue appears at around 2 seconds
+            interest_point_m = np.array(select_point(frame_m, "interest point")).astype(np.float32)
+            interest_point_r = np.array(select_point(frame_r, "interest point")).astype(np.float32)
+            # add the interest point
+            points_m = np.vstack((points_m, interest_point_m))
+            points_r = np.vstack((points_r, interest_point_r))
+            print(points_m.shape) 
 
         points_m = track_points(next_frame_m, frame_m, points_m)
         points_r = track_points(next_frame_r, frame_r, points_r)
 
         points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
 
-        face_points = {'nose': points[0],
-                       'cheek_l': points[1],
-                       'forehead': points[2],
-                       'cheek_r': points[3]}
+        if len(points) == 4:
+            face_points = {
+                'nose': points[0],
+                'cheek_l': points[1],
+                'forehead': points[2],
+                'cheek_r': points[3]
+            }
+        elif len(points) == 5:
+            face_points['interest'] = points[4]
 
         origin, x, y, z = create3dRef(face_points)
-
-        frame_m = next_frame_m
-        frame_r = next_frame_r
+    
 
         ax.cla()
 
@@ -91,5 +112,17 @@ if __name__ == "__main__":
         cv.imshow("video M", frame_m)
         plt.draw()
         plt.pause(1.0 / fps)
+        
+        if(cv.waitKey(1) & 0xFF == ord("p")):
+            while True:
+                if(cv.waitKey(1) & 0xFF == ord("p")):
+                    break
+        cv.waitKey(1)
 
-        print(points)
+        frame_m = next_frame_m
+        frame_r = next_frame_r
+        
+        if face_points.get('interest') is not None:
+            interest_point = convertToRef(face_points['interest'], origin, x, y, z)
+            print("Interest point: [", interest_point[0], interest_point[1], interest_point[2], "] mm")
+        
