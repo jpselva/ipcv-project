@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def draw_point(frame, point: tuple[int, int], color: str):
+def draw_point(frame, point, color: str):
 
     if color == "red":
         rgb = (0, 0, 255)

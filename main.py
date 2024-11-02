@@ -3,7 +3,7 @@ import numpy as np
 from calibration import get_calib_images, stereo_calibrate
 from point_processing import select_point, track_points
 from ref import create3dRef, convertToRef
-from draw import plot_3d_points, plot_coordinate_system
+from draw import plot_3d_points, plot_coordinate_system, draw_point
 from triangulation import triangulate_points
 import matplotlib.pyplot as plt
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # these are hardcoded points I found that matched the desired features.
     # use select_n_points below to allow the user to select the points
     # they must be selected in the right order: nose, cheek_l, forehead, cheek_r
-    """ points_m = np.array([[528, 430],
+    points_m = np.array([[528, 430],
                           [646, 399],
                           [512, 314],
                           [383, 407]], np.float32)
@@ -56,10 +56,10 @@ if __name__ == "__main__":
     points_r = np.array([[742, 443],
                           [895, 409],
                           [743, 320],
-                          [618, 419]], np.float32) """
+                          [618, 419]], np.float32)
 
-    points_m = np.array(select_n_points(frame_m, 4), np.float32) 
-    points_r = np.array(select_n_points(frame_r, 4), np.float32)
+    """ points_m = np.array(select_n_points(frame_m, 4), np.float32) 
+    points_r = np.array(select_n_points(frame_r, 4), np.float32) """
 
     points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
 
@@ -105,23 +105,29 @@ if __name__ == "__main__":
     
 
         ax.cla()
-
         plot_3d_points(face_points.values(), face_points.keys(), ax)
         plot_coordinate_system(x, y, z, origin, ax, 50)
 
+        # DRAW DOTS and SHOW MIDDLE CAMERA
+        for img_point_m in points_m:
+            draw_point(next_frame_m, tuple(map(int, img_point_m)), "green")
         cv.imshow("video M", frame_m)
+        
+        # UPDATE 3D PLOT
         plt.draw()
         plt.pause(1.0 / fps)
         
+        # PAUSE VIDEO
         if(cv.waitKey(1) & 0xFF == ord("p")):
             while True:
                 if(cv.waitKey(1) & 0xFF == ord("p")):
                     break
+        
         cv.waitKey(1)
-
         frame_m = next_frame_m
         frame_r = next_frame_r
         
+        # PRINTS
         if face_points.get('interest') is not None:
             interest_point = convertToRef(face_points['interest'], origin, x, y, z)
             print("Interest point: [", interest_point[0], interest_point[1], interest_point[2], "] mm")
