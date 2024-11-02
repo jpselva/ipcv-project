@@ -18,7 +18,7 @@ def select_n_points(frame, n):
         elif i == 2:
             points.append(select_point(frame, "forehead (for reference)"))
         elif i == 3:
-            points.append(select_point(frame, "left Cheek (from camera's perspective)"))
+            points.append(select_point(frame, "left cheek (from camera's perspective)"))
         
     return points
 
@@ -94,9 +94,9 @@ if __name__ == "__main__":
         if len(points) == 4:
             face_points = {
                 'nose': points[0],
-                'cheek_l': points[1],
+                'cheek_r': points[1],
                 'forehead': points[2],
-                'cheek_r': points[3]
+                'cheek_l': points[3]
             }
         elif len(points) == 5:
             face_points['interest'] = points[4]
