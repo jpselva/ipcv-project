@@ -76,8 +76,8 @@ if __name__ == "__main__":
 
     while True:
         ret_m, next_frame_m = cap_m.read()
-        frame_count_m += 1
         ret_r, next_frame_r = cap_r.read()
+        frame_count_m += 1
 
         if not ret_m or not ret_r:
             print("couldn't read frame")
@@ -95,14 +95,12 @@ if __name__ == "__main__":
 
         points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
 
-        if len(points) == 4:
-            face_points = {
-                'nose': points[0],
-                'cheek_r': points[1],
-                'forehead': points[2],
-                'cheek_l': points[3]
-            }
-        elif len(points) == 5:
+        face_points = {'nose': points[0],
+                       'cheek_r': points[1],
+                       'forehead': points[2],
+                       'cheek_l': points[3]}
+
+        if len(points) == 5:
             face_points['interest'] = points[4]
 
         origin, x, y, z = create3dRef(face_points)
@@ -135,4 +133,3 @@ if __name__ == "__main__":
         if face_points.get('interest') is not None:
             interest_point = convertToRef(face_points['interest'], origin, x, y, z)
             print("Interest point: [", interest_point[0], interest_point[1], interest_point[2], "] mm")
-
