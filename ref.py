@@ -10,13 +10,14 @@ def create3dRef(face_points):
 
     y = np.cross(cheek_r - nose, cheek_l - nose)
     x = cheek_l - cheek_r
-    z = -np.cross(x, y) # to follow right hand rule
+    z = -np.cross(x, y)  # to follow right hand rule
 
     x /= np.linalg.norm(x)
     y /= np.linalg.norm(y)
     z /= np.linalg.norm(z)
 
     return origin, x, y, z
+
 
 def convertToRef(point, origin, x, y, z):
     v = point - origin

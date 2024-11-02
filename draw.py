@@ -17,49 +17,11 @@ def draw_point(frame, point, color: str):
 
     return frame
 
-#not being used
-""" def drawVector(frame, origin, dest, color):
-    if color == "red":
-        rgb = (0, 0, 255)
-    elif color == "green":
-        rgb = (0, 255, 0)
-    else:    # default color is blue
-        rgb = (255, 0, 0)
 
-    # convert to tuple of x, y
-    origin = tuple(origin[0][0].astype(int))
-    dest = tuple(dest[0][0].astype(int))
-
-    # Draw an arrow from origin to dest
-    cv.arrowedLine(frame, origin, dest, rgb, 2)
-
+def draw_points(frame, points, color):
+    for p in points:
+        draw_point(frame, p, color)
     return frame
- """
-
-""" def draw3dRef(ax: plt.Axes, origin, x, y, z):
-    # Unpack the origin and vectors for readability
-    x0, y0, z0 = origin
-    x1, y1, z1 = x
-    x2, y2, z2 = y
-    x3, y3, z3 = z
-
-    # Set up the figure and 3D axis
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    # Plot the origin point
-    ax.scatter(x0, y0, z0, color='black', s=50, label="Origin")
-
-    # Plot the X, Y, and Z vectors
-    ax.quiver(x0, y0, z0, x1, y1, z1, color='red', label="X", arrow_length_ratio=0.1)
-    ax.quiver(x0, y0, z0, x2, y2, z2, color='green', label="Y", arrow_length_ratio=0.1)
-    ax.quiver(x0, y0, z0, x3, y3, z3, color='blue', label="Z", arrow_length_ratio=0.1)
-
-    # Set labels
-    ax.set_xlabel('X-axis')
-    ax.set_ylabel('Y-axis')
-    ax.set_zlabel('Z-axis')
-    ax.legend() """
 
 
 def plot_3d_points(points, labels, ax):
@@ -86,6 +48,7 @@ def plot_3d_points(points, labels, ax):
     ax.set_ylim(mid_y - max_range, mid_y + max_range)
     ax.set_zlim(mid_z - max_range, mid_z + max_range)
     ax.invert_xaxis()
+
 
 def plot_coordinate_system(x, y, z, origin, ax, scale):
     # Plot each vector with the specified colors
