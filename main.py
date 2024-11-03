@@ -6,6 +6,10 @@ from ref import create3dRef, convertToRef
 from draw import plot_3d_points, plot_coordinate_system, draw_points
 from triangulation import triangulate_points
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+
+mpl.rcParams['figure.raise_window'] = False  # so matplotlib won't put window in focus whenever we update it
 
 
 def select_n_points(frame, labels):
@@ -100,7 +104,7 @@ if __name__ == "__main__":
                 points_m = np.delete(points_m, 4, 0)
             if len(points_r) == 5:
                 points_r = np.delete(points_r, 4, 0)
-    
+
             interest_point_m = np.array(select_point(frame_m, "interest point")).astype(np.float32)
             interest_point_r = np.array(select_point(frame_r, "interest point")).astype(np.float32)
             # add the interest point
@@ -133,7 +137,7 @@ if __name__ == "__main__":
 
         # UPDATE 3D PLOT
         plt.draw()
-        plt.pause(1.0 / fps)
+        plt.pause(0.0001)
 
         # PAUSE VIDEO
         if (cv.waitKey(1) & 0xFF == ord("p")):
