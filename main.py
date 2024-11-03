@@ -23,12 +23,12 @@ def show_multiple_frames(frames, title, dimensions):
 if __name__ == "__main__":
 
     # Get calibration images for both left and right cameras
-    calib_images_left = get_calib_images("left")
+    calib_images_middle = get_calib_images("middle")
     calib_images_right = get_calib_images("right")
 
     board_shape = (6, 9)
     square_sz_mm = 10
-    ret, R, T, E, F, K1, E1, dist1, K2, E2, dist2 = stereo_calibrate(calib_images_left, calib_images_right, board_shape, square_sz_mm)
+    ret, R, T, E, F, K1, E1, dist1, K2, E2, dist2 = stereo_calibrate(calib_images_middle, calib_images_right, board_shape, square_sz_mm)
 
     input_videos = ["project data/subject1/proefpersoon 1.2_M.avi", "project data/subject1/proefpersoon 1.2_R.avi"]
     output_videos = ["output_videos/output_M.mp4", "output_videos/output_R.mp4"]
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         points_m = np.array(select_n_points(frame_m, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
         points_r = np.array(select_n_points(frame_r, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
 
-    points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
+    points = triangulate_points(points_m, points_r, R, T, K1, K2)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                 points_r = np.vstack((points_r, interest_point_r))
 
         # POINTS TRIANGULATION
-        points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
+        points = triangulate_points(points_m, points_r, R, T, K1, K2)
 
         face_points = {'nose': points[0],
                        'cheek_r': points[1],

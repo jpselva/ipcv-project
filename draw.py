@@ -8,7 +8,7 @@ def draw_point(frame, point, color: str):
     # Check if the point is untracked
     if np.array_equal(point, np.array([-1, -1], np.float32)):
         return frame
-    
+
     if color == "red":
         rgb = (0, 0, 255)
     elif color == "green":
@@ -34,12 +34,12 @@ def draw_points(frame, points):
     return frame
 
 
-def plot_3d_points(points, labels, ax):
+def plot_3d_points(points, labels, ax, points_color='blue'):
     # Unpack the points into x, y, and z coordinates
     x_coords, y_coords, z_coords = zip(*points)
 
     # Scatter plot
-    ax.scatter(x_coords, y_coords, z_coords, c='blue', marker='o')
+    ax.scatter(x_coords, y_coords, z_coords, c=points_color, marker='o')
 
     # Add text labels for each point with its index
     for label, (x, y, z) in zip(labels, points):
@@ -57,7 +57,6 @@ def plot_3d_points(points, labels, ax):
     ax.set_xlim(mid_x - max_range, mid_x + max_range)
     ax.set_ylim(mid_y - max_range, mid_y + max_range)
     ax.set_zlim(mid_z - max_range, mid_z + max_range)
-    ax.invert_xaxis()
 
 
 def plot_coordinate_system(x, y, z, origin, ax, scale):
