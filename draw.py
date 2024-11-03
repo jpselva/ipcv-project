@@ -22,9 +22,15 @@ def draw_point(frame, point, color: str):
     return frame
 
 
-def draw_points(frame, points, color):
-    for p in points:
-        draw_point(frame, p, color)
+def draw_points(frame, points):
+
+    # draw all points green except fifth point, which is red
+    for i, point in enumerate(points):
+        if i == 4:
+            frame = draw_point(frame, point, "red")
+        else:
+            frame = draw_point(frame, point, "green")
+
     return frame
 
 

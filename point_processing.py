@@ -1,13 +1,21 @@
 import cv2 as cv
 import numpy as np
 
+def select_n_points(frame, labels):
+    points = []
+
+    for label in labels:
+        points.append(select_point(frame, label))
+
+    return points
+
 def select_point(frame, point_name="Point"):
-    selected_point = None  #variable to store the selected point
+    selected_point = None  # variable to store the selected point
     
-    # Mouse callback function to get the point
+    # mouse callback function to get the point
     def get_click(event, x, y, flags, param):
         nonlocal selected_point
-        if event == cv.EVENT_LBUTTONDOWN:  #if left mouse button is clicked
+        if event == cv.EVENT_LBUTTONDOWN:  # if left mouse button is clicked
             selected_point = (x, y)
             print("Selected point:", selected_point)
             
@@ -18,7 +26,7 @@ def select_point(frame, point_name="Point"):
     except Exception as e:
         print(f"Error setting mouse callback: {e}")
         
-    # Wait until the user selects a point
+    # wait until the user selects a point
     while selected_point is None:
         if cv.waitKey(1) & 0xFF == ord('q'):  #allow quitting with 'q'
             cv.destroyAllWindows()
@@ -26,7 +34,7 @@ def select_point(frame, point_name="Point"):
         cv.waitKey(10)
         
     cv.destroyWindow(f"Select {point_name}")
-    return selected_point  # Return the selected point
+    return selected_point  
 
 #not being used
 """ def track_point(frame, point_to_track, old_gray):

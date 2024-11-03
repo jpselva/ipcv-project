@@ -1,21 +1,13 @@
 import cv2 as cv
 import numpy as np
 from calibration import get_calib_images, stereo_calibrate
-from point_processing import select_point, track_points
+from point_processing import select_point, track_points, select_n_points
 from ref import create3dRef, convertToRef
 from draw import plot_3d_points, plot_coordinate_system, draw_points
 from triangulation import triangulate_points
 import matplotlib.pyplot as plt
 
-
-def select_n_points(frame, labels):
-    points = []
-
-    for label in labels:
-        points.append(select_point(frame, label))
-
-    return points
-
+SELECT_POINTS = False
 
 def show_multiple_frames(frames, title, dimensions):
     w, h = dimensions
@@ -63,8 +55,9 @@ if __name__ == "__main__":
                          [743, 320],
                          [618, 419]], np.float32)
 
-    # points_m = np.array(select_n_points(frame_m, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
-    # points_r = np.array(select_n_points(frame_r, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
+    if SELECT_POINTS:
+        points_m = np.array(select_n_points(frame_m, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
+        points_r = np.array(select_n_points(frame_r, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
 
     points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
 
@@ -100,7 +93,7 @@ if __name__ == "__main__":
                 points_m = np.delete(points_m, 4, 0)
             if len(points_r) == 5:
                 points_r = np.delete(points_r, 4, 0)
-    
+
             interest_point_m = np.array(select_point(frame_m, "interest point")).astype(np.float32)
             interest_point_r = np.array(select_point(frame_r, "interest point")).astype(np.float32)
             # add the interest point
@@ -126,8 +119,8 @@ if __name__ == "__main__":
         plot_coordinate_system(x, y, z, origin, ax, 50)
 
         # DRAW DOTS and SHOW CAMERAS
-        frame_m = draw_points(frame_m, np.int32(points_m), "green")
-        frame_r = draw_points(frame_r, np.int32(points_r), "green")
+        frame_m = draw_points(frame_m, np.int32(points_m))
+        frame_r = draw_points(frame_r, np.int32(points_r))
         show_multiple_frames([frame_m, frame_r], "Videos M, R",
                              [2 * frame_width // 3, frame_height // 3])
 
