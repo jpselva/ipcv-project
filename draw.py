@@ -5,6 +5,10 @@ import numpy as np
 
 def draw_point(frame, point, color: str):
 
+    # Check if the point is untracked
+    if np.array_equal(point, np.array([-1, -1], np.float32)):
+        return frame
+    
     if color == "red":
         rgb = (0, 0, 255)
     elif color == "green":

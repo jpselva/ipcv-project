@@ -82,17 +82,33 @@ if __name__ == "__main__":
         if not ret_m or not ret_r:
             print("couldn't read frame")
             break
-
-        if (frame_count_m == 2 * fps_m):  # tongue appears at around 2 seconds
-            interest_point_m = np.array(select_point(frame_m, "interest point")).astype(np.float32)
-            interest_point_r = np.array(select_point(frame_r, "interest point")).astype(np.float32)
-            # add the interest point
-            points_m = np.vstack((points_m, interest_point_m))
-            points_r = np.vstack((points_r, interest_point_r))
-
         points_m = track_points(next_frame_m, frame_m, points_m)
         points_r = track_points(next_frame_r, frame_r, points_r)
 
+        # if interest point is lost, remove it
+        if len(points_m) == 5 and len(points_r) == 5:
+            if np.array_equal(points_m[4], np.array([-1, -1], np.float32)) or np.array_equal(points_r[4], np.array([-1, -1], np.float32)):
+                points_m = np.delete(points_m, 4, 0)
+                points_r = np.delete(points_r, 4, 0)
+                print("Interest point lost, press 's' to reselect")
+
+        # if user clicks s, reselect interest point
+        if cv.waitKey(2) & 0xFF == ord("s"):
+
+            # if one of the arrays still has interest point, remove it
+            if len(points_m) == 5:
+                points_m = np.delete(points_m, 4, 0)
+            if len(points_r) == 5:
+                points_r = np.delete(points_r, 4, 0)
+    
+            interest_point_m = np.array(select_point(frame_m, "interest point")).astype(np.float32)
+            interest_point_r = np.array(select_point(frame_r, "interest point")).astype(np.float32)
+            # add the interest point
+            if interest_point_m is not None and interest_point_r is not None:
+                points_m = np.vstack((points_m, interest_point_m))
+                points_r = np.vstack((points_r, interest_point_r))
+
+        # POINTS TRIANGULATION
         points = triangulate_points(points_m, points_r, R, T, K1, dist1, K2, dist2)
 
         face_points = {'nose': points[0],

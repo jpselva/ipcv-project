@@ -55,4 +55,13 @@ def track_points(frame, prev_frame, points: np.ndarray):
 
     new_points, st, err = cv.calcOpticalFlowPyrLK(prev_gray, gray, points, None, **lk_params)
 
+    # define threshold for movement
+    movement_threshold = 15  # Example threshold, adjust as needed
+
+    for i in range(len(st)):
+        if st[i][0] == 0 or np.linalg.norm(new_points[i] - points[i]) > movement_threshold:
+
+            print(f"Point {i} not found or moved too much")
+            new_points[i] = np.array([-1, -1], np.float32)  # Mark as lost
+
     return new_points
