@@ -102,6 +102,11 @@ def main(input_videos: list, output_videos: list) -> None:
 
                 if vp.interest_point is not None:
                     vp.interest_point, gray_frame = track_point(frame, vp.interest_point, vp.old_gray)
+
+                    if vp.interest_point is not None:
+                        frame = draw_point(frame, vp.interest_point, "red")
+                else:   # pick the interest point again
+                    vp.interest_point = select_point(frame, "Interest Point")
                     frame = draw_point(frame, vp.interest_point, "red")
 
                 #TODO: if all the reference points are being tracked for all videos [tracking states not implemented yet]

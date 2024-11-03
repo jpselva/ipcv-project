@@ -42,7 +42,7 @@ def track_point(frame, point_to_track, old_gray):
 
     if st[0][0] == 0:
         print("Point not found")
-        return point_to_track, gray_frame
+        return None, gray_frame
 
     return new_point, gray_frame
 
