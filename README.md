@@ -12,7 +12,7 @@ the method.
 3. Place extracted folder in repository root (don't forget to exclude from push else you will get an error for too large of a file)
 
 ### Project Report
-https://www.overleaf.com/read/ppzgfztgsffj#bb082d (Send email address to edit)
+[Overleaf](https://www.overleaf.com/1543397862yfchgdgnrmjt#fabf18) (Send email address to edit)
    
 More info on the assignment and supporting materials:
 https://canvas.utwente.nl/courses/15644/assignments/132822
