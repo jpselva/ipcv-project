@@ -1,20 +1,29 @@
-from triangulation import triangulate_points
 import numpy as np
-import matplotlib.pyplot as plt
-from draw import draw3dRef
 
-def create3dRef(frame, reference_points_c1, reference_points_c2, R, T) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    points3d_homog = triangulate_points(reference_points_c1, reference_points_c2, R, T)
-    origin3d = points3d_homog[0][0:3]
-    x3d = points3d_homog[1][0:3]
-    
-    x_vector = (x3d - origin3d)
-    x_vector = x_vector / np.linalg.norm(x_vector)
-    
-    y_vector = np.array([x_vector[1], -x_vector[0], x_vector[2]], dtype=np.float32)
-    y_vector = y_vector / np.linalg.norm(y_vector)
-    
-    z_vector = np.cross(x_vector, y_vector)
-    z_vector = z_vector / np.linalg.norm(z_vector)
 
-    return origin3d, x_vector, y_vector, z_vector
+def create3dRef(face_points):
+    nose = face_points['nose']
+    cheek_l = face_points['cheek_l']
+    cheek_r = face_points['cheek_r']
+
+    origin = nose
+
+    y = np.cross(cheek_r - nose, cheek_l - nose)
+    x = cheek_l - cheek_r
+    z = -np.cross(x, y)  # to follow right hand rule
+
+    x /= np.linalg.norm(x)
+    y /= np.linalg.norm(y)
+    z /= np.linalg.norm(z)
+
+    return origin, x, y, z
+
+
+def convertToRef(point, origin, x, y, z):
+    v = point - origin
+
+    x_proj = np.dot(v, x)
+    y_proj = np.dot(v, y)
+    z_proj = np.dot(v, z)
+
+    return x_proj, y_proj, z_proj

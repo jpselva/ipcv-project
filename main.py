@@ -1,171 +1,179 @@
 import cv2 as cv
 import numpy as np
-from calibration import calibrate, get_calib_images, stereo_calibrate
-from point_processing import select_point, track_point
-from ref import create3dRef
-from draw import draw_point, draw3dRef
+from calibration import get_calib_images, stereo_calibrate
+from point_processing import select_point, track_points, select_n_points
+from ref import create3dRef, convertToRef
+from draw import plot_3d_points, plot_coordinate_system, draw_points
+from triangulation import triangulate_points
 import matplotlib.pyplot as plt
-
-NUM_REFERENCE_POINTS = 2 #origin and x (for vector x direction) for now
-
-class VideoProcessor:
-    def __init__(self, input_video: str, output_video: str):
-        self.input_video = input_video
-        self.output_video = output_video
-
-        self.cap = cv.VideoCapture(input_video)
-        if not self.cap.isOpened():
-            raise ValueError(f"Error: Unable to open video {input_video}")
-
-        self.fps = int(round(self.cap.get(cv.CAP_PROP_FPS)))
-        self.frame_width = int(self.cap.get(cv.CAP_PROP_FRAME_WIDTH))
-        self.frame_height = int(self.cap.get(cv.CAP_PROP_FRAME_HEIGHT))
-        fourcc = cv.VideoWriter_fourcc(*'mp4v')
-
-        self.frame_count = 0
-        self.video_done = False
-
-        self.ref_points = [] #origin and x
-        self.ref_point_states = {} #states of reference points
-
-        self.interest_point = None
-        self.old_gray = None
-
-        self.out = cv.VideoWriter(output_video, fourcc, self.fps, (self.frame_width, self.frame_height))
-
-    def increment_frame_count(self):
-        self.frame_count += 1
-
-    def read_frame(self):
-        ret, frame = self.cap.read()
-        return ret, frame
-
-    def write_frame(self, frame):
-        self.out.write(frame)
-
-    def release(self):
-        self.cap.release()
-        self.out.release()
-
-def main(input_videos: list, output_videos: list) -> None:
-
-    if len(input_videos) != len(output_videos): # Check if the number of input and output video files match
-        print("Error: The number of input and output video files must match.")
-        return
-
-    video_processors = [VideoProcessor(input_video, output_video) for input_video, output_video in zip(input_videos, output_videos)]
-
-    # Calculate the delay based on the highest FPS for all videos
-    max_fps = max(vp.fps for vp in video_processors)
-    delay = int(1000 / max_fps)
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    plt.ion()
-
-    # While loop for processing
-    while True:
-
-        # Read frames from all video processors and show them
-        for video_index, vp in enumerate(video_processors):
-            ret, frame = vp.read_frame()
-
-            if ret:
-                # resize frame for better performance (remove for final video)
-                frame = cv.resize(frame, (frame.shape[1]//2, frame.shape[0]//2))
-                
-                vp.increment_frame_count()
-
-                #! Point selection
-                # first frame
-                if vp.frame_count == 1:
-                    vp.old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)  # initialize old_gray for tracking
-
-                    #TODO: maybe put this repeated code in a function to avoid repetition
-                    origin = select_point(frame, "Origin of referential")
-                    x = select_point(frame, "x point for referential")
-                    vp.ref_points.append(origin)
-                    vp.ref_points.append(x)
-                    vp.ref_point_states["origin"] = False #not tracked yet
-                    vp.ref_point_states["x"] = False
-
-                # frame for 2s
-                if vp.frame_count == 2*vp.fps:
-                    vp.interest_point = select_point(frame, "Interest Point")    # select interest point
-
-                #! Point tracking
-                if len(vp.ref_points) == NUM_REFERENCE_POINTS: #if all reference points are selected
-                    for point in vp.ref_points:
-                        point = np.array(point).reshape(-1, 1, 2).astype(np.float32) #correct shape for tracking                        
-                        point, gray_frame = track_point(frame, point, vp.old_gray)
-                        frame = draw_point(frame, point, "green")
-
-                if vp.interest_point is not None:
-                    vp.interest_point, gray_frame = track_point(frame, vp.interest_point, vp.old_gray)
-
-                    if vp.interest_point is not None:
-                        frame = draw_point(frame, vp.interest_point, "red")
-                else:   # pick the interest point again
-                    vp.interest_point = select_point(frame, "Interest Point")
-                    frame = draw_point(frame, vp.interest_point, "red")
-
-                #TODO: if all the reference points are being tracked for all videos [tracking states not implemented yet]
-                #if all(vp.reference_points_states.values() for vp in video_processors):
-                #! IN PROGRESS: Create 3d referential (for now just tracking x and origin) 
-                if(all(len(vp.ref_points) == NUM_REFERENCE_POINTS for vp in video_processors)):
-                    origin3d, x_vector, y_vector, z_vector = create3dRef(frame, video_processors[0].ref_points,
-                                                            video_processors[1].ref_points, R2_1, T2_1)
-                    draw3dRef(ax, origin3d, x_vector, y_vector, z_vector)
-                    plt.draw()
-                    plt.pause(0.01)
+import matplotlib as mpl
 
 
-                vp.old_gray = gray_frame
+mpl.rcParams['figure.raise_window'] = False  # so matplotlib won't put window in focus whenever we update it
 
-                cv.imshow(f"Video {video_index}", frame)
-                vp.write_frame(frame)
-            
-            else:
-                vp.video_done = True
+SELECT_POINTS = True
 
-        if all(vp.video_done for vp in video_processors):   # if all videos are done
-            break
 
-        # Press Q on keyboard to exit
-        if cv.waitKey(delay) & 0xFF == ord('q'):
-            cv.destroyAllWindows()
-            plt.close(fig)
-            break
+def show_multiple_frames(frames, title, dimensions):
+    w, h = dimensions
+    combined = np.hstack(frames)
+    resized = cv.resize(combined, (w, h))
+    cv.imshow(title, resized)
 
-    # Release all video processors
-    for vp in video_processors:
-        vp.release()
-
-    cv.destroyAllWindows()
-    plt.close(fig)
 
 if __name__ == "__main__":
 
-    # Get calibration images for both left and right cameras
-    calib_images_left = get_calib_images("left")
+    # get calibration images
+    calib_images_middle = get_calib_images("middle")
     calib_images_right = get_calib_images("right")
+    calib_images_left = get_calib_images("left")
 
+    # perform stereo calibration
     board_shape = (6, 9)
-    square_sz_mm = 10 
+    square_sz_mm = 10
+    ret, R2, T2, _, _, K1, _, _, K2, _, _ = stereo_calibrate(calib_images_middle, calib_images_right, board_shape, square_sz_mm)
+    ret, R3, T3, _, _, _, _, _, K3, _, _ = stereo_calibrate(calib_images_middle, calib_images_left, board_shape, square_sz_mm)
 
-    ret, R2_1, T2_1, E, F, K1, E1, dist1, K2, E2, dist2 = stereo_calibrate(calib_images_left, calib_images_right, board_shape, square_sz_mm)
-    
-    if ret:
-        print("Stereo calibration successful.")
-        print(f"K1 = {K1}")  # Intrinsic matrix for camera 1
-        print(f"K2 = {K2}")  # Intrinsic matrix for camera 2
-        print(f"R (from 1 to 2)= {R2_1}")    # Rotation matrix from camera 1 to camera 2
-        print(f"T (from 1 to 2)= {T2_1}")    # Translation vector from camera 1 to camera 2
-    else:
-        print("Stereo calibration failed.")
+    input_videos = ["project data/subject1/proefpersoon 1.2_M.avi",
+                    "project data/subject1/proefpersoon 1.2_R.avi",
+                    "project data/subject1/proefpersoon 1.2_L.avi"]
 
-    input_videos = ["project data/subject1/proefpersoon 1.2_M.avi", "project data/subject1/proefpersoon 1.2_R.avi"]
-    output_videos = ["output_videos/output_M.mp4", "output_videos/output_R.mp4"]
+    cap_m = cv.VideoCapture(input_videos[0])
+    cap_r = cv.VideoCapture(input_videos[1])
+    cap_l = cv.VideoCapture(input_videos[2])
 
-    # Process videos
-    main(input_videos, output_videos)
+    ret_m, frame_m = cap_m.read()
+    ret_r, frame_r = cap_r.read()
+    ret_l, frame_l = cap_l.read()
+
+    fps = int(round(cap_m.get(cv.CAP_PROP_FPS)))
+    frame_width = int(cap_m.get(cv.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap_m.get(cv.CAP_PROP_FRAME_HEIGHT))
+    frame_count_m = 0
+
+    # these are hardcoded points I found that matched the desired features.
+    # use select_n_points below to allow the user to select the points
+    # they must be selected in the right order: nose, cheek_l, forehead, cheek_r
+    points_m = np.array([[528, 430],
+                         [646, 399],
+                         [512, 314],
+                         [383, 407]], np.float32)
+
+    points_r = np.array([[742, 443],
+                         [895, 409],
+                         [743, 320],
+                         [618, 419]], np.float32)
+
+    points_l = np.array([[324, 460],
+                         [421, 429],
+                         [292, 337],
+                         [148, 433]], np.float32)
+
+    if SELECT_POINTS:
+        points_m = np.array(select_n_points(frame_m, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
+        points_r = np.array(select_n_points(frame_r, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
+        points_l = np.array(select_n_points(frame_l, ["nose", "right cheek", "forehead", "left cheek"]), np.float32)
+
+    points = triangulate_points(points_m, points_r, R2, T2, K1, K2)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    while True:
+        ret_m, next_frame_m = cap_m.read()
+        ret_r, next_frame_r = cap_r.read()
+        ret_l, next_frame_l = cap_l.read()
+        frame_count_m += 1
+
+        if not ret_m or not ret_r:
+            print("couldn't read frame")
+            break
+
+        # if user clicks s, reselect interest point
+        if cv.waitKey(2) & 0xFF == ord("s"):
+
+            # if one of the arrays still has interest point, remove it
+            if len(points_m) == 5:
+                points_m = np.delete(points_m, 4, 0)
+            if len(points_r) == 5:
+                points_r = np.delete(points_r, 4, 0)
+            if len(points_l) == 5:
+                points_l = np.delete(points_l, 4, 0)
+
+            interest_point_m = np.array(select_point(frame_m, "interest point")).astype(np.float32)
+            interest_point_r = np.array(select_point(frame_r, "interest point")).astype(np.float32)
+            interest_point_l = np.array(select_point(frame_l, "interest point")).astype(np.float32)
+            # add the interest point
+            if interest_point_m is not None and interest_point_r is not None and interest_point_l is not None:
+                points_m = np.vstack((points_m, interest_point_m))
+                points_r = np.vstack((points_r, interest_point_r))
+                points_l = np.vstack((points_l, interest_point_l))
+
+        # pause video if user presses 'p'
+        if (cv.waitKey(1) & 0xFF == ord("p")):
+            while True:
+                if (cv.waitKey(1) & 0xFF == ord("p")):
+                    break
+
+        # track each point to the current frame
+        points_m = track_points(next_frame_m, frame_m, points_m)
+        points_r = track_points(next_frame_r, frame_r, points_r)
+        points_l = track_points(next_frame_l, frame_l, points_l)
+
+        # if interest point is lost, remove it
+        if len(points_m) == 5 and len(points_r) == 5 and len(points_l) == 5:
+            if (np.array_equal(points_m[4], np.array([-1, -1], np.float32)) or
+               np.array_equal(points_r[4], np.array([-1, -1], np.float32)) or
+               np.array_equal(points_l[4], np.array([-1, -1], np.float32))):
+                points_m = np.delete(points_m, 4, 0)
+                points_r = np.delete(points_r, 4, 0)
+                points_l = np.delete(points_l, 4, 0)
+                print("Interest point lost, press 's' to reselect")
+
+        # points triangulation
+        points = triangulate_points(points_m, points_r, R2, T2, K1, K2)
+        points_alt = triangulate_points(points_m, points_l, R3, T3, K1, K3)
+
+        # error is RMS of distances between triangulated points from each camera
+        error = np.sqrt(np.mean(np.power(points - points_alt, 2 * np.ones(points.shape))))
+
+        face_points = {'nose': points[0],
+                       'cheek_r': points[1],
+                       'forehead': points[2],
+                       'cheek_l': points[3]}
+
+        if len(points) == 5:
+            face_points['interest'] = points[4]
+
+        # calculate face coordinate system
+        origin, x, y, z = create3dRef(face_points)
+
+        # update 3d plot
+        ax.cla()
+        plot_3d_points(face_points.values(), face_points.keys(), ax)
+        plot_coordinate_system(x, y, z, origin, ax, 50)
+        plt.draw()
+        plt.pause(0.0001)
+
+        # draw dots and show cameras
+        frame_m = draw_points(frame_m, np.int32(points_m))
+        frame_r = draw_points(frame_r, np.int32(points_r))
+        frame_l = draw_points(frame_l, np.int32(points_l))
+        show_multiple_frames([frame_l, frame_m, frame_r], "Videos L, M, R",
+                             [3 * frame_width // 3, frame_height // 3])
+
+        # print interest point in face coordinate system and current error
+        if face_points.get('interest') is not None:
+            interest_point = convertToRef(face_points['interest'], origin, x, y, z)
+            ix, iy, iz = interest_point
+            print(f"Interest point: ({ix} {iy} {iz}) mm, error = {error} mm")
+        else:
+            print(f"error = {error} mm")
+
+        cv.waitKey(1)
+        frame_m = next_frame_m
+        frame_r = next_frame_r
+        frame_l = next_frame_l
